@@ -140,7 +140,8 @@ function App() {
   return (
     <div style={{ margin: '1rem' }}>
       <h1>IBT Bridge APP</h1>
-
+      
+      <h2>Connect to Wallets</h2>
       <EthConnect onProviderChange={setEthProvider} onAccountChange={setEthAccount} />
     
       <SuiConnect />
@@ -155,6 +156,7 @@ function App() {
       </div>
 
       <hr style={{ margin: '2rem 0' }} />
+      <h2>ETH IBT Coin</h2>
 
       <div style={{ marginTop: '1rem' }}>
         <label>Amount:</label>
@@ -170,6 +172,7 @@ function App() {
         <button onClick={handleBurnEth} style={{ marginRight: '1rem' }}>Burn (ETH)</button>
 
         <hr style={{ margin: '2rem 0' }} />
+        <h2>SUI IBT Coin</h2>
         <SuiMintButton></SuiMintButton>
         <SuiBurnButton></SuiBurnButton>
         <button onClick={handleCheckSuiBalances} style={{ marginRight: '1rem' }}>Check Sui Balances</button>
