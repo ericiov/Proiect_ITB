@@ -3,7 +3,7 @@ import { ConnectButton } from '@mysten/dapp-kit'
 
 function SuiConnect() {
   return (
-    <div style={{ marginBottom: '1rem' }}>
+    <div className="mb-3">
       <ConnectButton />
     </div>
   )
