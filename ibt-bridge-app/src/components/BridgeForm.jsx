@@ -111,44 +111,54 @@ export default function BridgeForm() {
 
   async function burnOnSui(amt) {
     console.log('[Burn] Starting burn on Sui:', amt);
-
+  
     if (!currentAccount) {
       alert('No Sui wallet connected!');
       return;
     }
-
+  
     try {
       const { data: ibtObjects } = await client.getOwnedObjects({
         owner: currentAccount.address,
         filter: { StructType: IBT_TYPE },
         options: { showType: true, showContent: true, showOwner: true },
       });
-
-      let selectedObject = null;
-      const amountInSmallestUnit = BigInt(parseFloat(amt) * 1_000_000_000);
-
+  
+      let totalBalance = 0n;
+      const objectsToMerge = [];
+      let selectedObjectId;
+      const burnAmountInSmallestUnit = BigInt(parseFloat(amt) * 1_000_000_000);
+  
       for (const obj of ibtObjects) {
         const { content } = obj.data;
         if (content && content.dataType === 'moveObject') {
           const balance = BigInt(content.fields.balance);
-          if (balance >= amountInSmallestUnit) {
-            selectedObject = obj;
+          totalBalance += balance;
+          objectsToMerge.push(obj.data.objectId);
+          if (balance >= burnAmountInSmallestUnit) {
+            selectedObjectId = obj.data.objectId;
             break;
           }
         }
       }
-
-      if (!selectedObject) {
+  
+      if (totalBalance < burnAmountInSmallestUnit) {
         alert('Not enough balance to burn the specified amount.');
         return;
       }
-
+  
       const tx = new Transaction();
+  
+      if (objectsToMerge.length > 1) {
+        tx.mergeCoins(objectsToMerge[0], objectsToMerge.slice(1));
+        selectedObjectId = objectsToMerge[0];
+      }
+  
       const [burnCoin] = tx.splitCoins(
-        selectedObject.data.objectId,
-        [tx.pure.u64(amountInSmallestUnit)]
+        selectedObjectId,
+        [tx.pure.u64(burnAmountInSmallestUnit)]
       );
-
+  
       tx.moveCall({
         arguments: [
           tx.object(TREASURY_CAP_ID),
@@ -156,19 +166,19 @@ export default function BridgeForm() {
         ],
         target: `${PKG_ID}::IBT::burn`,
       });
-
+  
       const result = await signAndExecuteTransaction({
         transaction: tx,
       });
-
+  
       console.log('[Burn] Transaction result:', result);
-
+  
     } catch (error) {
       console.error("Error burning IBT:", error);
       alert('Error burning IBT: ' + error.message);
     }
   }
-
+  
   async function mintOnEthereum(amt) {
     console.log('[Mint] Starting mint on Ethereum:', amt);
     try {
