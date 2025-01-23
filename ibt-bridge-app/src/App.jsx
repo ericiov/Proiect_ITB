@@ -10,6 +10,8 @@ import {
 import EthConnect from './components/EthConnect';
 import SuiConnect from './components/SuiConnect';
 import BridgeForm from './components/BridgeForm';
+import SuiMintButton from './components/SuiMintButton';
+import SuiBurnButton from './components/SuiBurnButton';
 
 const DEFAULT_CONTRACT_ADDRESS = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
 
@@ -63,112 +65,6 @@ function App() {
     } catch (err) {
       console.error('[Burn ETH] Eroare:', err);
       alert(`[Burn ETH] Eroare: ${err.message}`);
-    }
-  }
-
-  async function handleMintSui() {
-    try {
-      if (!currentSuiAccount) {
-        alert('Nu există un wallet Sui conectat! Conectează-l mai întâi.');
-        return;
-      }
-      if (!amount) {
-        alert('Introdu un amount înainte de a da Mint pe Sui!');
-        return;
-      }
-
-      const PKG_ID = '0xb05fe02db7af74d59bb11bff2362e6f00d1f388c5e36a12ee5de86a9f5128a94';
-      const ADMIN_CAP_ID = '0x42b96249e3f185a8f7733542afcce7868d1f223aa1bd90385bcb00821564159c';
-
-      console.log('[Mint Sui] Apel moveCall la IBT::mint...');
-      const result = await signAndExecuteTransaction(
-        {
-          packageObjectId: PKG_ID,
-          module: 'IBT',
-          function: 'mint',
-          typeArguments: [],
-          arguments: [ADMIN_CAP_ID, amount, currentSuiAccount.address],
-          gasBudget: 20_000_000,
-        },
-        'moveCall' 
-      );
-
-      console.log('[Mint Sui] Rezultat raw:', result);
-      alert('[Mint Sui] Finalizat. Verifică wallet-ul și explore-ul.');
-      
-
-      const newBalances = await suiClient.getAllBalances({
-        owner: currentSuiAccount.address,
-      });
-      console.log('[Mint Sui] Balanțe după mint:', newBalances);
-    } catch (err) {
-      console.error('[Mint Sui] Eroare:', err);
-      alert('[Mint Sui] Eroare:\n' + JSON.stringify(err));
-    }
-  }
-
-  async function handleBurnSui() {
-    try {
-      if (!currentSuiAccount) {
-        alert('Nu există un wallet Sui conectat! Conectează-l mai întâi.');
-        return;
-      }
-      if (!amount) {
-        alert('Introdu un amount înainte de a da Burn pe Sui!');
-        return;
-      }
-
-
-      const coinId = prompt('Introdu ID-ul coin-ului IBT care are >= amount:');
-      if (!coinId) {
-        alert('Nu ai introdus niciun coin ID, Burn anulat.');
-        return;
-      }
-
-      const PKG_ID = '0xb05fe02db7af74d59bb11bff2362e6f00d1f388c5e36a12ee5de86a9f5128a94';
-      const ADMIN_CAP_ID = '0x42b96249e3f185a8f7733542afcce7868d1f223aa1bd90385bcb00821564159c';
-
-      console.log('[Burn Sui] Apel transaction cu SplitCoin + burn...');
-      const result = await signAndExecuteTransaction(
-        {
-          kind: 'transaction',
-          data: {
-            transactions: [
-              {
-                SplitCoin: {
-                  coin: coinId,
-                  amount: Number(amount),
-                },
-              },
-              {
-                MoveCall: {
-                  package: PKG_ID,
-                  module: 'IBT',
-                  function: 'burn',
-                  typeArguments: [],
-                  arguments: [
-                    ADMIN_CAP_ID,
-                    { kind: 'Result', index: 0 }, 
-                  ],
-                },
-              },
-            ],
-            gasBudget: 20_000_000,
-          },
-        },
-        'transaction' 
-      );
-
-      console.log('[Burn Sui] Rezultat raw:', result);
-      alert('[Burn Sui] Finalizat. Verifică wallet-ul și explore-ul.');
-
-      const newBalances = await suiClient.getAllBalances({
-        owner: currentSuiAccount.address,
-      });
-      console.log('[Burn Sui] Balanțe după burn:', newBalances);
-    } catch (err) {
-      console.error('[Burn Sui] Eroare:', err);
-      alert('[Burn Sui] Eroare:\n' + JSON.stringify(err));
     }
   }
 
@@ -243,7 +139,7 @@ function App() {
 
   return (
     <div style={{ margin: '1rem' }}>
-      <h1>IBT Bridge DApp - dAppKit 0.14.47</h1>
+      <h1>IBT Bridge APP</h1>
 
       <EthConnect onProviderChange={setEthProvider} onAccountChange={setEthAccount} />
     
@@ -258,6 +154,8 @@ function App() {
         />
       </div>
 
+      <hr style={{ margin: '2rem 0' }} />
+
       <div style={{ marginTop: '1rem' }}>
         <label>Amount:</label>
         <input
@@ -270,8 +168,10 @@ function App() {
       <div style={{ marginTop: '1rem' }}>
         <button onClick={handleMintEth} style={{ marginRight: '1rem' }}>Mint (ETH)</button>
         <button onClick={handleBurnEth} style={{ marginRight: '1rem' }}>Burn (ETH)</button>
-        <button onClick={handleMintSui} style={{ marginRight: '1rem' }}>Mint (SUI)</button>
-        <button onClick={handleBurnSui} style={{ marginRight: '1rem' }}>Burn (SUI)</button>
+
+        <hr style={{ margin: '2rem 0' }} />
+        <SuiMintButton></SuiMintButton>
+        <SuiBurnButton></SuiBurnButton>
         <button onClick={handleCheckSuiBalances} style={{ marginRight: '1rem' }}>Check Sui Balances</button>
         <button onClick={handleCheckIbtObjects}>Check Sui IBT Object</button>
       </div>
@@ -279,7 +179,7 @@ function App() {
       <hr style={{ margin: '2rem 0' }} />
       <BridgeForm ethProvider={ethProvider} ethAccount={ethAccount} />
 
-      <p>Sui Wallet: {currentSuiAccount?.address || '(not connected)'}</p>
+      
     </div>
   );
 }
